@@ -39,6 +39,7 @@
 #include "tsPAT.h"
 #include "tsPMT.h"
 #include "tsCADescriptor.h"
+#include "tsScramblingDescriptor.h"
 #include "tsStreamIdentifierDescriptor.h"
 #include "tsDataBroadcastIdDescriptor.h"
 #include "tsRegistrationDescriptor.h"
@@ -162,6 +163,11 @@ ts::PMTPlugin::PMTPlugin(TSP* tsp_) :
          u"System Id and ECM PID. The optional private data must be a suite of "
          u"hexadecimal digits. Several --add-ca-descriptor options may be specified "
          u"to add several descriptors.");
+
+    option(u"add-scrambling-descriptor", 0, STRING, 0, UNLIMITED_COUNT);
+    help(u"add-scrambling-descriptor", u"scrambling_mode",
+         u"Add a Scrambling_descriptor at program level in the PMT with the "
+         u"specified scrambling_mode(1=CSA1, 2=CSA2, 3=CSA3).");
 
     option(u"add-pid", 'a', STRING, 0, UNLIMITED_COUNT);
     help(u"add-pid", u"pid/stream_type",
@@ -458,6 +464,11 @@ bool ts::PMTPlugin::start()
     UStringVector cadescs;
     getValues(cadescs, u"add-ca-descriptor");
     if (!CADescriptor::AddFromCommandLine(_add_descs, cadescs, *tsp)) {
+        return false;
+    }
+    UStringVector scramblingdescs;
+    getValues(scramblingdescs, u"add-scrambling-descriptor");
+    if (!ScramblingDescriptor::AddFromCommandLine(_add_descs, scramblingdescs, *tsp)) {
         return false;
     }
     if (present(u"add-programinfo-id")) {

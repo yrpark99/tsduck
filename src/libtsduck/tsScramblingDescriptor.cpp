@@ -130,3 +130,43 @@ void ts::ScramblingDescriptor::fromXML(const xml::Element* element)
         checkXMLName(element) &&
         element->getIntAttribute<uint8_t>(scrambling_mode, u"scrambling_mode", true);
 }
+
+//----------------------------------------------------------------------------
+// Decode a command-line CA_descriptor and fills this object with it.
+//----------------------------------------------------------------------------
+
+bool ts::ScramblingDescriptor::fromCommmandLine(const UString& value, Report& report)
+{
+    // int scrambling_mode = 0;
+    size_t count = 0;
+    size_t index = 0;
+
+    value.scan(count, index, u"%i", {&scrambling_mode});
+
+    // On return, index points to the next index in val after "scrambling_mode".
+    if (count != 1) {
+        report.error(u"invalid \"scrambling_mode\" value \"%s\"", {value});
+        return false;
+    }
+
+    return true;
+}
+
+//----------------------------------------------------------------------------
+// Decode command-line Scrambling_descriptor and add them in a descriptor list.
+//----------------------------------------------------------------------------
+
+bool ts::ScramblingDescriptor::AddFromCommandLine(DescriptorList& dlist, const UStringVector& values, Report& report)
+{
+    bool result = true;
+    for (size_t i = 0; i < values.size(); ++i) {
+        ScramblingDescriptor desc;
+        if (desc.fromCommmandLine(values[i], report)) {
+            dlist.add(desc);
+        }
+        else {
+            result = false;
+        }
+    }
+    return result;
+}

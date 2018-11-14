@@ -34,8 +34,12 @@
 
 #pragma once
 #include "tsAbstractDescriptor.h"
+#include "tsNullReport.h"
 
 namespace ts {
+
+    class DescriptorList;
+
     //!
     //! Representation of a scrambling_descriptor.
     //! @see ETSI 300 468, 6.2.32.
@@ -59,6 +63,25 @@ namespace ts {
         //! @param [in] charset If not zero, character set to use without explicit table code.
         //!
         ScramblingDescriptor(const Descriptor& bin, const DVBCharset* charset = nullptr);
+
+        //!
+        //! Decode a command-line Scrambling_descriptor and fills this object with it.
+        //! @param [in] value Scrambling descriptor in command-line form: scrambling_mode
+        //! The scrambling_mode is integer value, either decimal or hexadecimal.
+        //! @param [in,out] report Where to report errors (typically badly formed parameters).
+        //! @return True on success, false on error.
+        //!
+        bool fromCommmandLine(const UString& value, Report& report = NULLREP);
+
+        //!
+        //! Static method to decode command-line Scrambling_descriptor and add them in a descriptor list.
+        //! @param [in,out] dlist Descriptor list. The new Scrambling descriptors are added in the list.
+        //! @param [in] values List of Scrambling descriptors in command-line form: scrambling_mode
+        //! @param [in,out] report Where to report errors (typically badly formed parameters).
+        //! @return True on success, false on error.
+        //! @see fromCommmandLine()
+        //!
+        static bool AddFromCommandLine(DescriptorList& dlist, const UStringVector& values, Report& report = NULLREP);
 
         // Inherited methods
         virtual void serialize(Descriptor&, const DVBCharset* = nullptr) const override;
