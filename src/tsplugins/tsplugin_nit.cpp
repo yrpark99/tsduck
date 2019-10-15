@@ -69,6 +69,8 @@ namespace ts {
         uint8_t            _mpe_fec;
         bool               _update_time_slicing;  // In terrestrial delivery
         uint8_t            _time_slicing;
+        bool               _set_orig_netw_id;  // Change original network id
+        uint16_t           _new_orig_netw_id;  // New original network id
 
         // Values for _lcn_oper and _sld_oper.
         enum {
@@ -118,7 +120,9 @@ ts::NITPlugin::NITPlugin(TSP* tsp_) :
     _update_mpe_fec(false),
     _mpe_fec(0),
     _update_time_slicing(false),
-    _time_slicing(0)
+    _time_slicing(0),
+    _set_orig_netw_id(false),
+    _new_orig_netw_id(0)
 {
     option(u"cleanup-private-descriptors", 0);
     help(u"cleanup-private-descriptors",
@@ -192,6 +196,10 @@ ts::NITPlugin::NITPlugin(TSP* tsp_) :
     help(u"time-slicing",
          u"Set the \"time slicing indicator\" in the terrestrial delivery system "
          u"descriptors to the specified value (0 or 1).");
+
+    option(u"original-network-id", 0, UINT16);
+    help(u"original-network-id", u"id",
+         u"Modify the original network id in the NIT with the specified value.");
 }
 
 
@@ -219,6 +227,8 @@ bool ts::NITPlugin::start()
     _new_netw_id = intValue<uint16_t>(u"network-id");
     _use_nit_other = present(u"other") || present(u"nit-other");
     _nit_other_id = intValue<uint16_t>(u"other", intValue<uint16_t>(u"nit-other"));
+    _set_orig_netw_id = present(u"original-network-id");
+    _new_orig_netw_id = intValue<uint16_t>(u"original-network-id");
 
     if (_lcn_oper != LCN_NONE && !_remove_serv.empty()) {
         tsp->error(u"--lcn and --remove-service are mutually exclusive");
@@ -300,6 +310,17 @@ void ts::NITPlugin::modifyTable(BinaryTable& table, bool& is_target, bool& reins
         nit.descs.removeByTag(DID_NETWORK_NAME);
         // Add a new network_name_descriptor
         nit.descs.add(NetworkNameDescriptor(_new_netw_name));
+    }
+
+    // Update the original network id.
+    if (_set_orig_netw_id) {
+        for (NIT::TransportMap::iterator it = nit.transports.begin(); it != nit.transports.end(); ++it) {
+            TransportStreamId new_tsid(it->first.transport_stream_id, _new_orig_netw_id);
+            if (new_tsid != it->first) {
+                nit.transports[new_tsid] = it->second;
+                nit.transports.erase(it->first);
+            }
+        }
     }
 
     // Process the global descriptor list
